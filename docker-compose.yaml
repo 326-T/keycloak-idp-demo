@@ -1,6 +1,21 @@
 version: "3"
 
 services:
+  nginx:
+    depends_on:
+      - keycloak
+      - first-provider
+      - second-provider
+    image: nginx:latest
+    container_name: keycloak-proxy
+    ports:
+      - "8443:8443" # プロキシがリッスンするポート
+    networks:
+      - keycloak-network
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf
+      - .cert:/etc/nginx/certs
+
   keycloak:
     depends_on:
       - keycloak-db
@@ -20,14 +35,10 @@ services:
       - KEYCLOAK_ADMIN=admin
       - KEYCLOAK_ADMIN_PASSWORD=password
       - KC_FEATURES=organization
-    volumes:
-      - .cert/fullchain.pem:/etc/x509/https/fullchain.pem
-      - .cert/privkey.pem:/etc/x509/https/privkey.pem
-    ports:
-      - "8443:8443"
-      - "9000:9000"
     networks:
-      - keycloak-network
+      keycloak-network:
+        aliases:
+          - master.keycloak.local
     command: ["start", "--optimized", "--hostname=master.keycloak.local"]
 
   keycloak-db:
@@ -38,7 +49,7 @@ services:
       POSTGRES_USER: db_admin
       POSTGRES_PASSWORD: db_password
     networks:
-      - keycloak-network
+      keycloak-network:
     volumes:
       - .data/keycloak-db:/var/lib/postgresql/data
 
@@ -57,18 +68,14 @@ services:
       - KC_DB_USERNAME=db_admin
       - KC_DB_PASSWORD=db_password
       - KC_HOSTNAME=0.0.0.0
-      - KC_HOSTNAME_PORT=8444
+      - KC_HOSTNAME_PORT=8443
       - KEYCLOAK_ADMIN=admin
       - KEYCLOAK_ADMIN_PASSWORD=password
       - KC_FEATURES=organization
-    volumes:
-      - .cert/fullchain.pem:/etc/x509/https/fullchain.pem
-      - .cert/privkey.pem:/etc/x509/https/privkey.pem
-    ports:
-      - "8444:8443"
-      - "9001:9000"
     networks:
-      - keycloak-network
+      keycloak-network:
+        aliases:
+          - first.keycloak.local
     command: ["start", "--optimized", "--hostname=first.keycloak.local"]
 
   first-provider-db:
@@ -79,7 +86,7 @@ services:
       POSTGRES_USER: db_admin
       POSTGRES_PASSWORD: db_password
     networks:
-      - keycloak-network
+      keycloak-network:
     volumes:
       - .data/first-provider-db:/var/lib/postgresql/data
 
@@ -98,18 +105,14 @@ services:
       - KC_DB_USERNAME=db_admin
       - KC_DB_PASSWORD=db_password
       - KC_HOSTNAME=0.0.0.0
-      - KC_HOSTNAME_PORT=8445
+      - KC_HOSTNAME_PORT=8443
       - KEYCLOAK_ADMIN=admin
       - KEYCLOAK_ADMIN_PASSWORD=password
       - KC_FEATURES=organization
-    volumes:
-      - .cert/fullchain.pem:/etc/x509/https/fullchain.pem
-      - .cert/privkey.pem:/etc/x509/https/privkey.pem
-    ports:
-      - "8445:8443"
-      - "9002:9000"
     networks:
-      - keycloak-network
+      keycloak-network:
+        aliases:
+          - second.keycloak.local
     command: ["start", "--optimized", "--hostname=second.keycloak.local"]
 
   second-provider-db:
@@ -120,9 +123,10 @@ services:
       POSTGRES_USER: db_admin
       POSTGRES_PASSWORD: db_password
     networks:
-      - keycloak-network
+      keycloak-network:
     volumes:
       - .data/second-provider-db:/var/lib/postgresql/data
 
 networks:
   keycloak-network:
+    driver: bridge
