@@ -1,0 +1,128 @@
+version: "3"
+
+services:
+  keycloak:
+    depends_on:
+      - keycloak-db
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: keycloak
+    environment:
+      - KC_HTTPS_CERTIFICATE_KEY_FILE=/etc/x509/https/privkey.pem
+      - KC_HTTPS_CERTIFICATE_FILE=/etc/x509/https/fullchain.pem
+      - KC_DB=postgres
+      - KC_DB_URL=jdbc:postgresql://keycloak-db:5432/keycloak
+      - KC_DB_USERNAME=db_admin
+      - KC_DB_PASSWORD=db_password
+      - KC_HOSTNAME=0.0.0.0
+      - KC_HOSTNAME_PORT=8443
+      - KEYCLOAK_ADMIN=admin
+      - KEYCLOAK_ADMIN_PASSWORD=password
+      - KC_FEATURES=organization
+    volumes:
+      - .cert/fullchain.pem:/etc/x509/https/fullchain.pem
+      - .cert/privkey.pem:/etc/x509/https/privkey.pem
+    ports:
+      - "8443:8443"
+      - "9000:9000"
+    networks:
+      - keycloak-network
+    command: ["start", "--optimized", "--hostname=master.keycloak.local"]
+
+  keycloak-db:
+    image: postgres:17.2
+    container_name: keycloak-db
+    environment:
+      POSTGRES_DB: keycloak
+      POSTGRES_USER: db_admin
+      POSTGRES_PASSWORD: db_password
+    networks:
+      - keycloak-network
+    volumes:
+      - .data/keycloak-db:/var/lib/postgresql/data
+
+  first-provider:
+    depends_on:
+      - first-provider-db
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: first-provider
+    environment:
+      - KC_HTTPS_CERTIFICATE_KEY_FILE=/etc/x509/https/privkey.pem
+      - KC_HTTPS_CERTIFICATE_FILE=/etc/x509/https/fullchain.pem
+      - KC_DB=postgres
+      - KC_DB_URL=jdbc:postgresql://first-provider-db:5432/keycloak
+      - KC_DB_USERNAME=db_admin
+      - KC_DB_PASSWORD=db_password
+      - KC_HOSTNAME=0.0.0.0
+      - KC_HOSTNAME_PORT=8444
+      - KEYCLOAK_ADMIN=admin
+      - KEYCLOAK_ADMIN_PASSWORD=password
+      - KC_FEATURES=organization
+    volumes:
+      - .cert/fullchain.pem:/etc/x509/https/fullchain.pem
+      - .cert/privkey.pem:/etc/x509/https/privkey.pem
+    ports:
+      - "8444:8443"
+      - "9001:9000"
+    networks:
+      - keycloak-network
+    command: ["start", "--optimized", "--hostname=first.keycloak.local"]
+
+  first-provider-db:
+    image: postgres:17.2
+    container_name: first-provider-db
+    environment:
+      POSTGRES_DB: keycloak
+      POSTGRES_USER: db_admin
+      POSTGRES_PASSWORD: db_password
+    networks:
+      - keycloak-network
+    volumes:
+      - .data/first-provider-db:/var/lib/postgresql/data
+
+  second-provider:
+    depends_on:
+      - second-provider-db
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: second-provider
+    environment:
+      - KC_HTTPS_CERTIFICATE_KEY_FILE=/etc/x509/https/privkey.pem
+      - KC_HTTPS_CERTIFICATE_FILE=/etc/x509/https/fullchain.pem
+      - KC_DB=postgres
+      - KC_DB_URL=jdbc:postgresql://second-provider-db:5432/keycloak
+      - KC_DB_USERNAME=db_admin
+      - KC_DB_PASSWORD=db_password
+      - KC_HOSTNAME=0.0.0.0
+      - KC_HOSTNAME_PORT=8445
+      - KEYCLOAK_ADMIN=admin
+      - KEYCLOAK_ADMIN_PASSWORD=password
+      - KC_FEATURES=organization
+    volumes:
+      - .cert/fullchain.pem:/etc/x509/https/fullchain.pem
+      - .cert/privkey.pem:/etc/x509/https/privkey.pem
+    ports:
+      - "8445:8443"
+      - "9002:9000"
+    networks:
+      - keycloak-network
+    command: ["start", "--optimized", "--hostname=second.keycloak.local"]
+
+  second-provider-db:
+    image: postgres:17.2
+    container_name: second-provider-db
+    environment:
+      POSTGRES_DB: keycloak
+      POSTGRES_USER: db_admin
+      POSTGRES_PASSWORD: db_password
+    networks:
+      - keycloak-network
+    volumes:
+      - .data/second-provider-db:/var/lib/postgresql/data
+
+networks:
+  keycloak-network:
