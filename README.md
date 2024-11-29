@@ -3,7 +3,8 @@
 ## 証明書や秘密鍵の作成
 
 ```bash
-$ cd ./certs
+$ mkdir .certs
+$ cd .certs
 $ openssl genrsa -out privkey.pem 2048
 $ openssl req -new -key privkey.pem -out keycloak.csr -config san.cnf
 $ openssl x509 -req -in keycloak.csr -signkey privkey.pem -out fullchain.pem -days 365 -extensions req_ext -extfile san.cnf
