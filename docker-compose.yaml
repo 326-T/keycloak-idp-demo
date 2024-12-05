@@ -37,6 +37,22 @@ services:
       - ./nginx.conf:/etc/nginx/nginx.conf
       - .cert:/etc/nginx/certs
 
+  mail:
+    image: mailhog/mailhog
+    container_name: mailhog
+    ports:
+      - "1025:1025"
+      - "8025:8025"
+    environment:
+      MH_STORAGE: maildir
+      MH_MAILDIR_PATH: /maildir
+    networks:
+      keycloak-network:
+        aliases:
+          - mailhog.local
+    volumes:
+      - .data/mailhog:/maildir
+
   keycloak:
     depends_on:
       - keycloak-db
